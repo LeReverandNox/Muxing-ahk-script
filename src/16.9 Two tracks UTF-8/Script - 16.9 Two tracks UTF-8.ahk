@@ -1,0 +1,83 @@
+SetWorkingDir %A_ScriptDir%
+folder = %A_ScriptDir%
+
+;~ On dit bonjour !
+msgbox, Bienvenue dans le mega-muxer du poney !
+
+;~ On creer une petite variable pour compter les tours de la boucle
+i = 0
+
+;~ On compte les fichiers mkv et on stock le résultat dans count
+SetBatchLines -1
+count := 0
+Loop, %folder%\*.mkv, 1, 0 
+  count += 1
+;~ msgbox, %count%
+
+;~ Si pas de mkv, on affiche une erreur
+if count = 0
+{
+	msgbox, Aucun fichier trouvé
+	msgbox, Bye bye.
+	ExitApp
+}
+
+;~ Sinon, on affiche le nombre de fichier à mux
+else
+{
+	msgbox, %count% fichiers trouvés !
+}
+
+;~ On vérifie la présence des dossiers Muxed et Sources et s'ils n'existent pas, on les creer
+IfNotExist, %folder%\Muxed
+{
+FileCreateDir, %folder%\Muxed
+}
+
+IfNotExist, %folder%\Sources
+{
+FileCreateDir, %folder%\Sources
+}
+
+;~ On boucle tant qu'il y a des épisodes
+while i < count
+{
+	;~ On stock le nom du fichier trouvé dans une variable, et on retire l'extension
+	Loop, %folder%\*.mkv
+	filename = %A_LoopFileName%
+	StringTrimRight, filename, filename, 4
+	;~ On affiche le nom du fichier sur le quel on travail
+	;~ msgbox, Fichier à traiter : %filename% - Au boulot !
+	
+	;~ On supprime l'ancien et on crée un petit script batch pour mux
+	FileDelete, %folder%\mux.bat
+	FileAppend,
+	(
+	"C:\Program Files (x86)\MKVToolNix\mkvmerge.exe" -o "%folder%\Muxed\%filename%.mkv"  "--sub-charset" "0:UTF-8" "--language" "0:fre" "--track-name" "0:Sous-titres" "--forced-track" "0:no" "-s" "0" "-D" "-A" "-T" "--no-global-tags" "--no-chapters" "(" "%folder%\%filename% VF.srt" ")" "--sub-charset" "0:UTF-8" "--language" "0:eng" "--track-name" "0:Subtitles" "--forced-track" "0:no" "-s" "0" "-D" "-A" "-T" "--no-global-tags" "--no-chapters" "(" "%folder%\%filename% VO.srt" ")" "--language" "0:eng" "--default-track" "0:no" "--forced-track" "0:no" "--aspect-ratio" "0:16/9" "--default-track" "1:yes" "--forced-track" "1:no" "-a" "1" "-d" "0" "-S" "-T" "--no-global-tags" "--no-chapters" "(" "%folder%\%filename%.mkv" ")" "--track-order" "0:0,1:0,2:0,2:1"
+	), %folder%\mux.bat
+		
+	;~ On execute le script
+	RunWait, %folder%\mux.bat, %folder%, hide,
+	If ErrorLevel
+	{
+		msgbox, Échec du muxage
+		ExitApp
+	}
+	else
+	{
+		;~ msgbox, Fichiers muxés !
+	}
+	;~ On supprime le script
+	FileDelete, %folder%\mux.bat
+	
+	;~ On déplace les fichiers sources dans le dossier Sources
+	FileMove, %filename%*.*, %folder%\Sources\
+	;~ msgbox, Fichiers sources déplacés !
+	
+	;~ On incrémente le compteur
+	i += 1
+}
+ ;~ On dit au revoir !
+msgbox, Merci de m'avoir utilisé pour muxer vos fichiers :)
+ExitApp
+
